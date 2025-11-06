@@ -53,7 +53,7 @@ export default function ChatPage() {
     setRecording(false);
   };
 
-  // TTS (출력 읽어주기)
+  // TTS
   const supportsSpeechOut = typeof window !== "undefined" && "speechSynthesis" in window;
   const speak = (text: string, lang: "ja-JP" | "ko-KR") => {
     if (!supportsSpeechOut) {
@@ -62,14 +62,15 @@ export default function ChatPage() {
     }
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
-    u.rate = 0.95;   // 조금 느리게
+    u.rate = 0.95;
     u.pitch = 1.0;
     u.volume = 1.0;
-    // 적절한 voice 선택(가능한 경우)
     const vs = window.speechSynthesis.getVoices();
-    const best = vs.find(v => v.lang === lang) || vs.find(v => v.lang.startsWith(lang.split("-")[0]));
+    const best =
+      vs.find((v) => v.lang === lang) ||
+      vs.find((v) => v.lang.startsWith(lang.split("-")[0]));
     if (best) u.voice = best;
-    window.speechSynthesis.cancel(); // 이전 읽기 중지
+    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
   };
 
@@ -93,7 +94,6 @@ export default function ChatPage() {
         ...next.map((m) => ({ role: m.role, content: m.content })),
       ];
 
-      // 스트리밍 엔드포인트 호출
       const res = await fetch("/api/ai-chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,7 +105,6 @@ export default function ChatPage() {
       });
 
       if (!res.ok || !res.body) {
-        // 서버에서 에러 메시지 반환했다면 보여주기
         let err = res.statusText;
         try {
           const j = await res.json();
@@ -114,7 +113,6 @@ export default function ChatPage() {
         throw new Error(err || "No stream body");
       }
 
-      // 말풍선 하나 만들어두고 여기에 계속 이어붙임
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -193,12 +191,13 @@ export default function ChatPage() {
                   borderRadius: 12,
                   background: m.role === "user" ? "#4a2c18" : "#fff",
                   color: m.role === "user" ? "#fff" : "#4a2c18",
-                  border: m.role === "user" ? "none" : "1px solid rgba(74,44,24,0.15)",
+                  border:
+                    m.role === "user" ? "none" : "1px solid rgba(74,44,24,0.15)",
                 }}
               >
                 {m.content}
                 {m.role === "assistant" && supportsSpeechOut && (
-                  <div style={{ display: "flex", gap: "8", marginTop: "8" }}>
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                     <button
                       onClick={() => speak(jp || m.content, "ja-JP")}
                       style={{
@@ -235,110 +234,121 @@ export default function ChatPage() {
         })}
       </div>
 
-      {/* 입력 영역 */}
+      {/* 입력 영역 — 패치 B */}
       <div
-  style={{
-    position: "sticky",
-    bottom: 72, // 하단 탭(60px) + 여유
-    left: 0,
-    right: 0,
-    maxWidth: "100%",
-    overflowX: "hidden",      // 💥 가로 넘침 차단
-    paddingBottom: "env(safe-area-inset-bottom)",
-    background: "transparent",
-  }}
->
-  <div
-    style={{
-      display: "flex",
-      alignItems: "stretch",
-      gap: 8,
-      maxWidth: "100%",
-      boxSizing: "border-box",
-      flexWrap: "nowrap",
-    }}
-  >
-    {/* 입력창 */}
-    <input
-      value={input}
-      onChange={(e) => setInput(e.target.value)}
-      placeholder="メッセージを入力 / 메시지를 입력하세요"
-      style={{
-        flex: 1,
-        minWidth: 0,                // 💥 줄어들 수 있게
-        height: 48,
-        border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        padding: "12px 14px",
-        fontSize: 14,
-        boxSizing: "border-box",
-      }}
-    />
+        style={{
+          position: "sticky",
+          bottom: 72, // 하단 탭(60px) + 여유
+          left: 0,
+          right: 0,
+          maxWidth: "100%",
+          overflowX: "hidden", // 가로 넘침 차단
+          paddingBottom: "env(safe-area-inset-bottom)",
+          background: "transparent",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "stretch",
+            gap: 8,
+            maxWidth: "100%",
+            boxSizing: "border-box",
+            flexWrap: "nowrap",
+          }}
+        >
+          {/* 입력창 */}
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="メッセージを入力 / 메시지를 입력하세요"
+            style={{
+              flex: 1,
+              minWidth: 0, // 핵심: 줄어들 수 있게
+              height: 48,
+              border: "1px solid #e5e7eb",
+              borderRadius: 10,
+              padding: "12px 14px",
+              fontSize: 14,
+              boxSizing: "border-box",
+            }}
+          />
 
-    {/* 언어 버튼 묶음 */}
-    <div
-      style={{
-        display: "flex",
-        gap: 8,
-        minWidth: 0,                // 💥 묶음 자체도 축소 허용
-        flexWrap: "nowrap",
-      }}
-    >
-      <button
-        onClick={() => (recording ? stopDictation() : startDictation("ko-KR"))}
-        style={{
-          height: 48,
-          padding: "0 10px",
-          borderRadius: 10,
-          border: "1px solid rgba(74,44,24,0.2)",
-          backgroundColor: recording && recLang === "ko-KR" ? "#c85c5c" : "#ffe3ca",
-          color: "#4a2c18",
-          fontWeight: 800,
-          whiteSpace: "nowrap",
-          flexShrink: 1,           // 💥 버튼도 축소 허용
-        }}
-      >
-        🎤 韓/KO
-      </button>
-      <button
-        onClick={() => (recording ? stopDictation() : startDictation("ja-JP"))}
-        style={{
-          height: 48,
-          padding: "0 10px",
-          borderRadius: 10,
-          border: "1px solid rgba(74,44,24,0.2)",
-          backgroundColor: recording && recLang === "ja-JP" ? "#c85c5c" : "#ffe3ca",
-          color: "#4a2c18",
-          fontWeight: 800,
-          whiteSpace: "nowrap",
-          flexShrink: 1,           // 💥 버튼도 축소 허용
-        }}
-      >
-        🎤 日/JP
-      </button>
+          {/* 언어 버튼 묶음 */}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              minWidth: 0, // 묶음 자체도 축소 허용
+              flexWrap: "nowrap",
+            }}
+          >
+            <button
+              onClick={() =>
+                recording ? stopDictation() : startDictation("ko-KR")
+              }
+              style={{
+                height: 48,
+                padding: "0 10px",
+                borderRadius: 10,
+                border: "1px solid rgba(74,44,24,0.2)",
+                backgroundColor:
+                  recording && recLang === "ko-KR" ? "#c85c5c" : "#ffe3ca",
+                color: "#4a2c18",
+                fontWeight: 800,
+                whiteSpace: "nowrap",
+                flexShrink: 1, // 버튼도 축소 허용
+              }}
+            >
+              🎤 韓/KO
+            </button>
+            <button
+              onClick={() =>
+                recording ? stopDictation() : startDictation("ja-JP")
+              }
+              style={{
+                height: 48,
+                padding: "0 10px",
+                borderRadius: 10,
+                border: "1px solid rgba(74,44,24,0.2)",
+                backgroundColor:
+                  recording && recLang === "ja-JP" ? "#c85c5c" : "#ffe3ca",
+                color: "#4a2c18",
+                fontWeight: 800,
+                whiteSpace: "nowrap",
+                flexShrink: 1, // 버튼도 축소 허용
+              }}
+            >
+              🎤 日/JP
+            </button>
+          </div>
+
+          {/* 전송 */}
+          <button
+            onClick={send}
+            disabled={loading}
+            style={{
+              height: 48,
+              padding: "0 14px",
+              borderRadius: 10,
+              backgroundColor: "#4a2c18",
+              color: "#fff",
+              fontWeight: 800,
+              border: "none",
+              whiteSpace: "nowrap",
+              minWidth: 84, // 살짝만 확보
+              flexShrink: 1, // 축소 허용
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
+          >
+            {loading ? "送信中… / 전송 중…" : "送信 / 전송"}
+          </button>
+        </div>
+      </div>
+
+      <p style={{ fontSize: 12, color: "#6b4a2b", marginTop: 8 }}>
+        いつも日本語と韓国語でお答えします。/ 항상 일본어와 한국어로 함께 답해요.
+      </p>
     </div>
-
-    {/* 전송 */}
-    <button
-      onClick={send}
-      disabled={loading}
-      style={{
-        height: 48,
-        padding: "0 14px",
-        borderRadius: 10,
-        backgroundColor: "#4a2c18",
-        color: "#fff",
-        fontWeight: 800,
-        border: "none",
-        whiteSpace: "nowrap",
-        minWidth: 84,              // 살짝만 확보
-        flexShrink: 1,             // 💥 축소 허용
-        cursor: loading ? "not-allowed" : "pointer",
-      }}
-    >
-      {loading ? "送信中… / 전송 중…" : "送信 / 전송"}
-    </button>
-  </div>
-</div>
   );
 }
