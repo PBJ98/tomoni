@@ -1,8 +1,15 @@
 // app/(app)/me/page.tsx
 "use client";
+export const dynamic = "force-dynamic"; // ✅ SSG 프리렌더 금지 (정적 내보내기 시 에러 방지)
+// export const revalidate = 0;          // (선호한다면 이 옵션도 가능)
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "../../../../../firebase";
+
+// ✅ 클라이언트 전용 Firebase 초기화 파일에서 임포트할 것!
+// 예: /lib/firebase.client.ts 에서 auth/db export
+import { auth, db } from "@/lib/firebase";
+
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 
@@ -50,14 +57,13 @@ export default function MePage() {
       const userRef = doc(db, "users", uid);
       await updateDoc(userRef, {
         name,
-        age,            // 숫자로 저장하려면 Number(age) 사용
+        age, // 숫자로 저장하려면 Number(age)
         bio,
         gender,
         profileColor,
         updatedAt: new Date(),
       });
       alert("저장되었습니다! / 保存しました！");
-      // 이 페이지 자체가 /me 이므로 별도 이동 없음
     } catch (error) {
       console.error(error);
       alert("저장 중 오류가 발생했습니다 / 保存中にエラーが発生しました。");
@@ -77,7 +83,7 @@ export default function MePage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #fbeee6, #fde7d9)", // Tomoni bg
+        background: "linear-gradient(135deg, #fbeee6, #fde7d9)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
