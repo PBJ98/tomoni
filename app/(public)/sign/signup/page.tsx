@@ -1,4 +1,4 @@
-        "use client";
+"use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
@@ -11,27 +11,39 @@ export default function SignUpPage() {
   // ✅ 기본 상태
   const [name, setName] = useState("");
   const [emailId, setEmailId] = useState("");
-  const [emailDomain, setEmailDomain] = useState("");
-  const [customDomain, setCustomDomain] = useState("");
+  const [emailDomain, setEmailDomain] = useState(""); // select value
+  const [customDomain, setCustomDomain] = useState(""); // 직접 입력
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState<"남성" | "여성" | null>(null);
   const [bio, setBio] = useState("");
   const [securityQuestion, setSecurityQuestion] = useState("");
   const [securityAnswer, setSecurityAnswer] = useState("");
-  const [agreePrivacy, setAgreePrivacy] = useState(false);       // ✅ 필수 동의
-  const [agreeMarketing, setAgreeMarketing] = useState(false);   // ✅ 선택 동의 (신규)
+  const [agreePrivacy, setAgreePrivacy] = useState(false);      // ✅ 필수 동의
+  const [agreeMarketing, setAgreeMarketing] = useState(false);  // ✅ 선택 동의
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [isFormValid, setIsFormValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ 옵션 목록
-  const emailDomains = ["gmail.com", "naver.com", "daum.net", "직접 입력"];
-  const securityQuestions = [
-    "좋아하는 색깔은? / 好きな色は？",
-    "가장 기억에 남는 장소는? / 思い出の場所は？",
-    "가장 친한 친구의 이름은? / 親友の名前は？",
+  // ✅ 옵션 목록 (JP 주요 도메인 + 양언어 라벨)
+  const emailDomains = [
+    { label: "gmail.com", value: "gmail.com" },
+         { label: "naver.com (네이버)", value: "naver.com" },  
+    { label: "yahoo.co.jp (ヤフー)", value: "yahoo.co.jp" },
+    { label: "icloud.com (アイクラウド)", value: "icloud.com" },
+    { label: "outlook.jp", value: "outlook.jp" },
+    { label: "outlook.com", value: "outlook.com" },
+    { label: "docomo.ne.jp (ドコモ)", value: "docomo.ne.jp" },
+    { label: "au.com (KDDI)", value: "au.com" },
+    { label: "ezweb.ne.jp (旧 au)", value: "ezweb.ne.jp" },
+    { label: "softbank.ne.jp", value: "softbank.ne.jp" },
+    { label: "i.softbank.jp", value: "i.softbank.jp" },
+    { label: "직접 입력 / 直接入力", value: "직접 입력" }, // ✅ 직접입력
   ];
+
+  // ✅ 사용자가 '@'를 넣어도 안전하게 도메인만 추출
+  const normalizeDomain = (d: string) =>
+    d.replace(/\s+/g, "").replace(/^@+/, "").replace(/@+.*$/, "");
 
   // ✅ 유효성 검사
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -39,8 +51,10 @@ export default function SignUpPage() {
     /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,15}$/.test(pw);
 
   useEffect(() => {
-    const domain = emailDomain === "직접 입력" ? customDomain : emailDomain;
+    const domainRaw = emailDomain === "직접 입력" ? customDomain : emailDomain;
+    const domain = emailDomain === "직접 입력" ? normalizeDomain(domainRaw) : domainRaw;
     const fullEmail = `${emailId}@${domain}`;
+
     const valid =
       name.trim() &&
       validateEmail(fullEmail) &&
@@ -49,7 +63,8 @@ export default function SignUpPage() {
       bio.trim() &&
       securityQuestion.trim() &&
       securityAnswer.trim() &&
-      agreePrivacy; // ✅ 필수 동의 반영
+      agreePrivacy; // ✅ 필수 동의 포함
+
     setIsFormValid(Boolean(valid));
   }, [
     name,
@@ -61,13 +76,14 @@ export default function SignUpPage() {
     bio,
     securityQuestion,
     securityAnswer,
-    agreePrivacy, // ✅ 의존성
+    agreePrivacy,
   ]);
 
   // ✅ 회원가입 처리
   const handleSubmit = async () => {
     const newErrors: { [k: string]: string } = {};
-    const domain = emailDomain === "직접 입력" ? customDomain : emailDomain;
+    const domainRaw = emailDomain === "직접 입력" ? customDomain : emailDomain;
+    const domain = emailDomain === "직접 입력" ? normalizeDomain(domainRaw) : domainRaw;
     const fullEmail = `${emailId}@${domain}`;
 
     if (!name.trim()) newErrors.name = "이름을 입력해주세요 / お名前を入力してください。";
@@ -93,7 +109,7 @@ export default function SignUpPage() {
 
       const nowIso = new Date().toISOString();
 
-      // ✅ Firestore에 저장 (※ 비밀번호 저장은 학습용 주석, 실제 서비스에서는 제거 필수)
+      // ✅ Firestore 저장 (⚠️ 비밀번호는 저장하지 않음)
       await setDoc(doc(db, "users", user.uid), {
         name,
         email: fullEmail,
@@ -101,7 +117,6 @@ export default function SignUpPage() {
         bio,
         securityQuestion,
         securityAnswer,
-      
         createdAt: serverTimestamp(),
         consent: {
           privacy: true,
@@ -206,23 +221,25 @@ export default function SignUpPage() {
               onChange={(e) => setEmailDomain(e.target.value)}
               style={{ ...fieldStyle(errors.email), flex: 1 }}
             >
-              <option value="">도메인 선택 / ドメイン選択</option>
+              <option value="">{`도메인 선택 / ドメイン選択`}</option>
               {emailDomains.map((d) => (
-                <option key={d} value={d}>
-                  {d}
+                <option key={d.value} value={d.value}>
+                  {d.label}
                 </option>
               ))}
             </select>
           </div>
+
           {emailDomain === "직접 입력" && (
             <input
               type="text"
-              placeholder="custom-domain.com"
+              placeholder="custom-domain.com / カスタムドメイン"
               value={customDomain}
               onChange={(e) => setCustomDomain(e.target.value)}
               style={{ ...fieldStyle(errors.email), marginTop: 8 }}
             />
           )}
+
           {errors.email && (
             <p style={{ color: "#e11d48", fontSize: 12, marginTop: 6 }}>{errors.email}</p>
           )}
@@ -297,7 +314,11 @@ export default function SignUpPage() {
             style={{ ...fieldStyle(errors.securityQuestion), marginTop: 6 }}
           >
             <option value="">選択 / 선택</option>
-            {securityQuestions.map((q) => (
+            {[
+              "좋아하는 색깔은? / 好きな色は？",
+              "가장 기억에 남는 장소는? / 思い出の場所は？",
+              "가장 친한 친구의 이름은? / 親友の名前は？",
+            ].map((q) => (
               <option key={q} value={q}>
                 {q}
               </option>
