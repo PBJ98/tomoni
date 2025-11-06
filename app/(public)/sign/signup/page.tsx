@@ -1,4 +1,4 @@
-"use client";
+        "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
@@ -19,6 +19,8 @@ export default function SignUpPage() {
   const [bio, setBio] = useState("");
   const [securityQuestion, setSecurityQuestion] = useState("");
   const [securityAnswer, setSecurityAnswer] = useState("");
+  const [agreePrivacy, setAgreePrivacy] = useState(false);       // ✅ 필수 동의
+  const [agreeMarketing, setAgreeMarketing] = useState(false);   // ✅ 선택 동의 (신규)
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [isFormValid, setIsFormValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +48,8 @@ export default function SignUpPage() {
       password === confirmPassword &&
       bio.trim() &&
       securityQuestion.trim() &&
-      securityAnswer.trim();
+      securityAnswer.trim() &&
+      agreePrivacy; // ✅ 필수 동의 반영
     setIsFormValid(Boolean(valid));
   }, [
     name,
@@ -58,6 +61,7 @@ export default function SignUpPage() {
     bio,
     securityQuestion,
     securityAnswer,
+    agreePrivacy, // ✅ 의존성
   ]);
 
   // ✅ 회원가입 처리
@@ -76,6 +80,9 @@ export default function SignUpPage() {
     if (!bio.trim()) newErrors.bio = "자기소개 입력 / 自己紹介を入力";
     if (!securityQuestion) newErrors.securityQuestion = "보안 질문 선택 / セキュリティ質問を選択";
     if (!securityAnswer.trim()) newErrors.securityAnswer = "답변 입력 / 回答を入力";
+    if (!agreePrivacy)
+      newErrors.agreePrivacy =
+        "개인정보 처리방침에 동의해주세요 / 個人情報の取り扱いに同意してください。";
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
@@ -84,7 +91,9 @@ export default function SignUpPage() {
       setIsLoading(true);
       const { user } = await createUserWithEmailAndPassword(auth, fullEmail, password);
 
-      // ✅ Firestore에 비밀번호 저장 (학습용)
+      const nowIso = new Date().toISOString();
+
+      // ✅ Firestore에 저장 (※ 비밀번호 저장은 학습용 주석, 실제 서비스에서는 제거 필수)
       await setDoc(doc(db, "users", user.uid), {
         name,
         email: fullEmail,
@@ -92,8 +101,14 @@ export default function SignUpPage() {
         bio,
         securityQuestion,
         securityAnswer,
-        password, // ⚠️ 학습용 저장 (실제 서비스에서는 절대 X)
+      
         createdAt: serverTimestamp(),
+        consent: {
+          privacy: true,
+          privacyAt: nowIso,
+          marketing: agreeMarketing,
+          marketingAt: agreeMarketing ? nowIso : null,
+        },
       });
 
       alert("회원가입 성공! / 新規登録が完了しました。");
@@ -310,6 +325,64 @@ export default function SignUpPage() {
               {errors.securityAnswer}
             </p>
           )}
+        </div>
+
+        {/* ✅ 개인정보 동의 (필수) */}
+        <div style={{ marginTop: 16 }}>
+          <label style={{ fontSize: 13, color: "#6b4a2b" }}>同意 / 동의</label>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 6 }}>
+            <input
+              id="agreePrivacy"
+              type="checkbox"
+              checked={agreePrivacy}
+              onChange={(e) => setAgreePrivacy(e.target.checked)}
+              style={{ marginTop: 2 }}
+            />
+            <label htmlFor="agreePrivacy" style={{ fontSize: 12, lineHeight: 1.5 }}>
+              <strong>개인정보 처리방침</strong> 및 <strong>이용약관</strong>에 동의합니다。/{" "}
+              <strong>個人情報取扱方針</strong>と<strong>利用規約</strong>に同意します。{" "}
+              <a
+                href="/legal/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: "underline", color: "#4a2c18", fontWeight: 700 }}
+              >
+                개인정보 처리방침
+              </a>{" "}
+              /{" "}
+              <a
+                href="/legal/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: "underline", color: "#4a2c18", fontWeight: 700 }}
+              >
+                利用規約 / 이용약관
+              </a>
+            </label>
+          </div>
+          {errors.agreePrivacy && (
+            <p style={{ color: "#e11d48", fontSize: 12, marginTop: 6 }}>{errors.agreePrivacy}</p>
+          )}
+        </div>
+
+        {/* ✅ 마케팅 수신 동의 (선택) */}
+        <div style={{ marginTop: 10 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <input
+              id="agreeMarketing"
+              type="checkbox"
+              checked={agreeMarketing}
+              onChange={(e) => setAgreeMarketing(e.target.checked)}
+              style={{ marginTop: 2 }}
+            />
+            <label htmlFor="agreeMarketing" style={{ fontSize: 12, lineHeight: 1.5 }}>
+              <strong>광고성 정보 수신(이메일/알림)</strong>에 동의합니다（선택）。/{" "}
+              <strong>プロモーション情報の受信（メール/通知）</strong>に同意します（任意）。
+              <div style={{ opacity: 0.7, marginTop: 4 }}>
+                동의하지 않아도 서비스 이용에 제한이 없습니다。/ 同意しなくてもご利用に制限はありません。
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* 버튼 */}
