@@ -47,3 +47,8 @@ body {
 
 /* 디버깅용(원하면 .debug-outline 클래스에 붙여 사용) */
 .debug-outline * { outline: 1px solid rgba(0,0,0,.06); }
+
+* { box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+
+
