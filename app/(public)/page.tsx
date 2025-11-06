@@ -2,6 +2,38 @@
 import Link from "next/link";
 
 export default function LandingPage() {
+  // ✅ 공통 버튼 스타일
+  const baseBtn: React.CSSProperties = {
+    minWidth: 220,        // 동일 폭
+    height: 48,           // 동일 높이
+    padding: "0 24px",    // 내부 여백
+    fontSize: "1.05rem",
+    borderRadius: 8,
+    fontWeight: "bold",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxSizing: "border-box", // 테두리 포함하여 외형 동일
+    transition: "transform .15s ease, box-shadow .15s ease, background .15s, color .15s, border-color .15s",
+    textDecoration: "none",
+    cursor: "pointer",
+  };
+
+  const signinBtn: React.CSSProperties = {
+    ...baseBtn,
+    backgroundColor: "#ffe3ca",
+    color: "#4a2c18",
+    border: "2px solid #ffe3ca", // 테두리도 동일 두께로 맞춤
+    boxShadow: "0 4px 6px rgba(0,0,0,0.2)",
+  };
+
+  const signupBtn: React.CSSProperties = {
+    ...baseBtn,
+    backgroundColor: "transparent",
+    color: "#4a2c18",           // 가독성 향상 (기존 #fff → #4a2c18)
+    border: "2px solid #4a2c18" // 테두리 두께 로그인과 동일
+  };
+
   return (
     <main
       style={{
@@ -53,25 +85,14 @@ export default function LandingPage() {
         {/* 로그인 */}
         <Link
           href="/sign/signin"
-          style={{
-            padding: "0.9rem 2.5rem",
-            fontSize: "1.05rem",
-            backgroundColor: "#ffe3ca",
-            color: "#4a2c18",
-            border: "none",
-            borderRadius: 8,
-            fontWeight: "bold",
-            boxShadow: "0 4px 6px rgba(0,0,0,0.2)",
-            transition: "transform .15s ease, box-shadow .15s ease",
-            display: "inline-block",
-          }}
+          style={signinBtn}
           onMouseEnter={(e) => {
-            (e.currentTarget.style.backgroundColor = "#fff"),
-            (e.currentTarget.style.boxShadow = "0 6px 10px rgba(0,0,0,0.25)");
+            e.currentTarget.style.backgroundColor = "#fff";
+            e.currentTarget.style.boxShadow = "0 6px 10px rgba(0,0,0,0.25)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget.style.backgroundColor = "#ffe3ca"),
-            (e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)");
+            e.currentTarget.style.backgroundColor = "#ffe3ca";
+            e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)";
           }}
         >
           ログイン / 로그인
@@ -80,24 +101,16 @@ export default function LandingPage() {
         {/* 회원가입 */}
         <Link
           href="/sign/signup"
-          style={{
-            padding: "0.9rem 2.5rem",
-            fontSize: "1.05rem",
-            backgroundColor: "transparent",
-            color: "#fff",
-            border: "2px solid #4a2c18",
-            borderRadius: 8,
-            fontWeight: "bold",
-            transition: "transform .15s ease, box-shadow .15s ease, color .15s",
-            display: "inline-block",
-          }}
+          style={signupBtn}
           onMouseEnter={(e) => {
-            (e.currentTarget.style.color = "#4a2c18"),
-            (e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)");
+            e.currentTarget.style.backgroundColor = "#fff";
+            e.currentTarget.style.borderColor = "#4a2c18";
+            e.currentTarget.style.boxShadow = "0 4px 6px rgba(0,0,0,0.2)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget.style.color = "#fff"),
-            (e.currentTarget.style.boxShadow = "none");
+            e.currentTarget.style.backgroundColor = "transparent";
+            e.currentTarget.style.borderColor = "#4a2c18";
+            e.currentTarget.style.boxShadow = "none";
           }}
         >
           新規登録 / 회원가입
