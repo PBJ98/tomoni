@@ -14,7 +14,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 음성 입력
+  // ===== 음성 입력 =====
   const supportsSpeechIn = useMemo(
     () => typeof window !== "undefined" && (window as any).webkitSpeechRecognition,
     []
@@ -53,7 +53,7 @@ export default function ChatPage() {
     setRecording(false);
   };
 
-  // TTS
+  // ===== TTS =====
   const supportsSpeechOut = typeof window !== "undefined" && "speechSynthesis" in window;
   const speak = (text: string, lang: "ja-JP" | "ko-KR") => {
     if (!supportsSpeechOut) {
@@ -234,115 +234,109 @@ export default function ChatPage() {
         })}
       </div>
 
-      {/* 입력 영역 — 패치 B */}
+      {/* ===== 입력 영역 — 위: 입력칸, 아래: 버튼행 (겹침 방지) ===== */}
       <div
         style={{
           position: "sticky",
-          bottom: 72, // 하단 탭(60px) + 여유
+          bottom: "calc(60px + env(safe-area-inset-bottom) + 16px)", // 하단 탭(60) + 여유
           left: 0,
           right: 0,
           maxWidth: "100%",
-          overflowX: "hidden", // 가로 넘침 차단
-          paddingBottom: "env(safe-area-inset-bottom)",
+          overflowX: "hidden",
+          padding: "0 8px env(safe-area-inset-bottom)", // 좌우 8px 여백
           background: "transparent",
+          zIndex: 30,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "stretch",
-            gap: 8,
-            maxWidth: "100%",
-            boxSizing: "border-box",
-            flexWrap: "nowrap",
-          }}
-        >
-          {/* 입력창 */}
-          <input
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: "100%" }}>
+          {/* 입력칸 (textarea) */}
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="メッセージを入力 / 메시지를 입력하세요"
+            rows={2}
             style={{
-              flex: 1,
-              minWidth: 0, // 핵심: 줄어들 수 있게
-              height: 48,
+              width: "100%",
+              minHeight: 48,
+              maxHeight: 140,
+              resize: "vertical",
               border: "1px solid #e5e7eb",
               borderRadius: 10,
               padding: "12px 14px",
               fontSize: 14,
+              lineHeight: 1.4,
               boxSizing: "border-box",
             }}
           />
 
-          {/* 언어 버튼 묶음 */}
+          {/* 버튼행: 韓/KO | 日/JP | 送信/전송 */}
           <div
             style={{
               display: "flex",
               gap: 8,
-              minWidth: 0, // 묶음 자체도 축소 허용
+              alignItems: "stretch",
+              maxWidth: "100%",
+              minWidth: 0,
               flexWrap: "nowrap",
             }}
           >
             <button
-              onClick={() =>
-                recording ? stopDictation() : startDictation("ko-KR")
-              }
+              onClick={() => (recording ? stopDictation() : startDictation("ko-KR"))}
+              aria-label="韓/KO 音声入力"
               style={{
                 height: 48,
-                padding: "0 10px",
+                flex: "1 1 0",
+                minWidth: 0,
                 borderRadius: 10,
                 border: "1px solid rgba(74,44,24,0.2)",
-                backgroundColor:
-                  recording && recLang === "ko-KR" ? "#c85c5c" : "#ffe3ca",
+                backgroundColor: recording && recLang === "ko-KR" ? "#c85c5c" : "#ffe3ca",
                 color: "#4a2c18",
                 fontWeight: 800,
                 whiteSpace: "nowrap",
-                flexShrink: 1, // 버튼도 축소 허용
               }}
             >
               🎤 韓/KO
             </button>
+
             <button
-              onClick={() =>
-                recording ? stopDictation() : startDictation("ja-JP")
-              }
+              onClick={() => (recording ? stopDictation() : startDictation("ja-JP"))}
+              aria-label="日/JP 音声入力"
               style={{
                 height: 48,
-                padding: "0 10px",
+                flex: "1 1 0",
+                minWidth: 0,
                 borderRadius: 10,
                 border: "1px solid rgba(74,44,24,0.2)",
-                backgroundColor:
-                  recording && recLang === "ja-JP" ? "#c85c5c" : "#ffe3ca",
+                backgroundColor: recording && recLang === "ja-JP" ? "#c85c5c" : "#ffe3ca",
                 color: "#4a2c18",
                 fontWeight: 800,
                 whiteSpace: "nowrap",
-                flexShrink: 1, // 버튼도 축소 허용
               }}
             >
               🎤 日/JP
             </button>
-          </div>
 
-          {/* 전송 */}
-          <button
-            onClick={send}
-            disabled={loading}
-            style={{
-              height: 48,
-              padding: "0 14px",
-              borderRadius: 10,
-              backgroundColor: "#4a2c18",
-              color: "#fff",
-              fontWeight: 800,
-              border: "none",
-              whiteSpace: "nowrap",
-              minWidth: 84, // 살짝만 확보
-              flexShrink: 1, // 축소 허용
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
-          >
-            {loading ? "送信中… / 전송 중…" : "送信 / 전송"}
-          </button>
+            <button
+              onClick={send}
+              disabled={loading}
+              aria-label="送信 / 전송"
+              style={{
+                height: 48,
+                flex: "1 1 0",
+                minWidth: 0,
+                borderRadius: 10,
+                backgroundColor: "#4a2c18",
+                color: "#fff",
+                fontWeight: 800,
+                border: "none",
+                whiteSpace: "nowrap",
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.85 : 1,
+              }}
+            >
+              {loading ? "送信中… / 전송 중…" : "送信 / 전송"}
+            </button>
+          </div>
         </div>
       </div>
 
